@@ -4,254 +4,820 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lunar South Pole Mission Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-base: #070913;
-    --panel-bg: rgba(13, 18, 32, 0.92);
-    --panel-border: rgba(56, 82, 130, 0.45);
-    --card-bg: rgba(20, 28, 48, 0.75);
-    --accent-cyan: #38bdf8;
-    --accent-blue: #2563eb;
+    --bg-base: #05050a;
+    --bg-elevated: #0c0c14;
+    --panel-bg: rgba(12, 12, 20, 0.82);
+    --panel-border: rgba(255, 255, 255, 0.07);
+    --card-bg: rgba(18, 18, 28, 0.75);
+    --card-border: rgba(255, 255, 255, 0.06);
+    --accent-cyan: #22d3ee;
+    --accent-blue: #3b82f6;
     --accent-gold: #f59e0b;
-    --accent-green: #4ade80;
-    --accent-red: #f87171;
-    --text-main: #e2e8f0;
+    --accent-green: #22c55e;
+    --accent-red: #ef4444;
+    --accent-purple: #a78bfa;
+    --text-main: #f1f5f9;
+    --text-secondary: #cbd5e1;
     --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.45);
+    --shadow-lg: 0 20px 50px rgba(0,0,0,0.55);
+    --shadow-glow: 0 0 30px rgba(34, 211, 238, 0.12);
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg-base); color: var(--text-main); font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; overflow: hidden; height: 100vh; font-size: 13.5px; line-height: 1.5; }
-  #canvas-container { position: absolute; inset: 0; z-index: 1; }
-  canvas { display: block; width: 100%; height: 100%; }
 
-  /* SUBTLE CUSTOM SCROLLBARS */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-base);
+    color: var(--text-main);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Subtle star-field background behind canvas */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.06), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(59, 130, 246, 0.05), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #canvas-container {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Scrollbars */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 10px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.5); }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(34, 211, 238, 0.35);
+  }
 
-  /* TOP NAVIGATION */
+  /* ========== TOP NAV ========== */
   #top-navbar {
-    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
-    background: var(--panel-bg); border: 1px solid var(--panel-border);
-    border-radius: 999px; padding: 5px 10px; backdrop-filter: blur(16px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.65); z-index: 50; display: flex; gap: 5px;
-    max-width: 97vw; overflow-x: auto;
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 10, 18, 0.78);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 5px;
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.03) inset;
+    z-index: 50;
+    display: flex;
+    gap: 2px;
+    max-width: calc(100vw - 28px);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
-  .nav-tab {
-    background: transparent; color: var(--text-muted); border: none; padding: 7px 12px;
-    border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer;
-    white-space: nowrap; transition: all 0.2s ease; margin: 0;
-  }
-  .nav-tab:hover { color: #fff; background: rgba(255,255,255,0.08); }
-  .nav-tab.active { background: var(--accent-blue); color: #fff; box-shadow: 0 0 14px rgba(37, 99, 235, 0.6); }
+  #top-navbar::-webkit-scrollbar { display: none; }
 
-  /* SIDEBAR TOGGLE PILLS */
-  .dock-toggle {
-    position: absolute; top: 72px; z-index: 45;
-    background: var(--panel-bg); color: var(--text-main); border: 1px solid var(--panel-border);
-    border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600;
-    backdrop-filter: blur(14px); box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-    cursor: pointer; display: none; align-items: center; gap: 6px; transition: all 0.2s;
+  .nav-tab {
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    padding: 9px 15px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--transition);
+    letter-spacing: 0.01em;
   }
-  .dock-toggle:hover { border-color: var(--accent-cyan); color: #fff; background: #17233b; }
+  .nav-tab:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.06);
+  }
+  .nav-tab:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+  }
+  .nav-tab.active {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.3);
+  }
+
+  /* ========== DOCK TOGGLES ========== */
+  .dock-toggle {
+    position: absolute;
+    top: 86px;
+    z-index: 45;
+    background: rgba(12, 12, 20, 0.88);
+    color: var(--text-main);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 9px 18px;
+    font-size: 12.5px;
+    font-weight: 500;
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition);
+  }
+  .dock-toggle:hover {
+    border-color: rgba(34, 211, 238, 0.4);
+    background: rgba(18, 18, 28, 0.95);
+    box-shadow: var(--shadow-md), 0 0 20px rgba(34, 211, 238, 0.1);
+  }
+  .dock-toggle:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 2px; }
   .dock-toggle.visible { display: inline-flex; }
   #toggleLeftBtn { left: 18px; }
   #toggleRightBtn { right: 18px; }
 
-  /* FLOATING PANELS */
+  /* ========== PANELS ========== */
   .panel {
-    position: absolute; background: var(--panel-bg); border: 1px solid var(--panel-border);
-    border-radius: 16px; padding: 20px; backdrop-filter: blur(16px);
-    box-shadow: 0 16px 48px rgba(0,0,0,0.65); max-height: calc(100vh - 92px); overflow-y: auto;
-    z-index: 40; display: none; transition: opacity 0.25s ease, transform 0.25s ease;
+    position: absolute;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    backdrop-filter: blur(28px) saturate(1.3);
+    -webkit-backdrop-filter: blur(28px) saturate(1.3);
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.02) inset;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    z-index: 40;
+    display: none;
+    transition: opacity 0.28s var(--ease-out), transform 0.28s var(--ease-out);
   }
-  .panel.active-panel { display: block; }
+  .panel.active-panel { display: block; animation: panelIn 0.32s var(--ease-out); }
   .panel.collapsed { display: none !important; }
 
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
   .panel-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--panel-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
   }
-  .panel-header h2 { font-size: 16px; color: #fff; font-weight: 700; letter-spacing: -0.2px; margin: 0; border: none; padding: 0; }
+  .panel-header h2 {
+    font-size: 17px;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    margin: 0;
+  }
   .collapse-btn {
-    background: rgba(255,255,255,0.06); border: 1px solid transparent; color: var(--text-muted);
-    border-radius: 8px; padding: 4px 9px; font-size: 11.5px; cursor: pointer; margin: 0;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    padding: 6px 11px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all var(--transition);
   }
-  .collapse-btn:hover { background: rgba(255,255,255,0.12); color: #fff; border-color: var(--panel-border); }
+  .collapse-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .collapse-btn:focus-visible { outline: 2px solid var(--accent-cyan); }
 
-  .panel h2 { font-size: 16px; margin-bottom: 12px; color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-  .panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin: 16px 0 8px; display: flex; justify-content: space-between; align-items: center; }
-  
-  .left { top: 72px; left: 18px; width: 365px; }
-  .right { top: 72px; right: 18px; width: 380px; }
-  .center-panel { top: 72px; left: 50%; transform: translateX(-50%); width: min(880px, 94vw); padding: 24px; }
+  .panel h2 {
+    font-size: 17px;
+    margin-bottom: 10px;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .panel h3 {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-dim);
+    margin: 18px 0 10px;
+    font-weight: 600;
+  }
 
-  /* CLEAN ACCORDION SECTIONS */
+  .left { top: 86px; left: 18px; width: 370px; }
+  .right { top: 86px; right: 18px; width: 390px; }
+  .center-panel {
+    top: 86px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(920px, calc(100vw - 32px));
+    padding: 26px;
+  }
+
+  /* ========== ACCORDIONS ========== */
   details.section-box {
-    background: var(--card-bg); border: 1px solid var(--panel-border);
-    border-radius: 12px; padding: 10px 14px; margin-bottom: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
+    padding: 13px 16px;
+    margin-bottom: 11px;
+    transition: border-color var(--transition);
+  }
+  details.section-box:hover {
+    border-color: rgba(255,255,255,0.1);
   }
   details.section-box summary {
-    list-style: none; cursor: pointer; font-size: 12.5px; font-weight: 700;
-    color: #e2e8f0; display: flex; justify-content: space-between; align-items: center;
+    list-style: none;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     user-select: none;
   }
   details.section-box summary::-webkit-details-marker { display: none; }
   details.section-box summary::after {
-    content: '▾'; font-size: 13px; color: var(--accent-cyan); transition: transform 0.2s;
+    content: '▾';
+    font-size: 13px;
+    color: var(--accent-cyan);
+    transition: transform 0.22s var(--ease-out);
+    opacity: 0.85;
   }
   details.section-box:not([open]) summary::after { transform: rotate(-90deg); }
-  details.section-box[open] summary { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(56, 82, 130, 0.35); }
+  details.section-box[open] summary {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
 
-  /* CONTROLS & FORM ELEMENTS */
+  /* ========== BUTTONS & INPUTS ========== */
   button, .btn {
-    background: #17253e; color: #cbd5e1; border: 1px solid #2e4873; border-radius: 8px;
-    padding: 8px 12px; cursor: pointer; font-size: 12.5px; margin: 0; transition: all 0.2s;
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600;
+    background: rgba(255,255,255,0.05);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: var(--radius-sm);
+    padding: 9px 15px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: inherit;
   }
-  button:hover, .btn:hover { background: #22385c; border-color: var(--accent-cyan); color: #fff; text-decoration: none; }
-  button.active { background: var(--accent-blue); border-color: #60a5fa; color: #fff; }
-  
+  button:hover, .btn:hover {
+    background: rgba(255,255,255,0.09);
+    border-color: rgba(255,255,255,0.16);
+    transform: translateY(-1px);
+  }
+  button:active, .btn:active {
+    transform: translateY(0);
+  }
+  button:focus-visible, .btn:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+  }
+  button.active {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+  }
+
   .btn-danger {
-    background: rgba(153, 27, 27, 0.28); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);
-    padding: 4px 8px; font-size: 11px; border-radius: 6px;
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.25);
   }
-  .btn-danger:hover { background: #dc2626; color: #fff; border-color: #f87171; }
-
+  .btn-danger:hover {
+    background: #dc2626;
+    color: #fff;
+    border-color: transparent;
+  }
   .btn-view {
-    background: rgba(14, 116, 144, 0.3); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4);
-    padding: 4px 9px; font-size: 11px; border-radius: 6px;
+    background: rgba(34, 211, 238, 0.1);
+    color: #67e8f9;
+    border-color: rgba(34, 211, 238, 0.25);
   }
-  .btn-view:hover { background: #0284c7; color: #fff; border-color: #38bdf8; }
+  .btn-view:hover {
+    background: #0891b2;
+    color: #fff;
+    border-color: transparent;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #0e7490, #0891b2);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(8, 145, 178, 0.3);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #0891b2, #06b6d4);
+    transform: translateY(-1px);
+  }
 
-  input[type="range"] { width: 100%; accent-color: var(--accent-cyan); margin: 8px 0; cursor: pointer; }
-  input[type="text"], select {
-    background: #0b101d; border: 1px solid var(--panel-border); color: #fff; padding: 9px 12px; border-radius: 8px; width: 100%; margin: 4px 0 10px; font-size: 12.5px;
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent-cyan);
+    margin: 10px 0;
+    cursor: pointer;
+    height: 4px;
   }
-  input[type="text"]:focus, select:focus { outline: none; border-color: var(--accent-cyan); }
-  label { display: block; margin: 8px 0 3px; color: var(--text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  .value { color: #fff; font-weight: 600; }
+  input[type="text"], select, input[type="date"] {
+    background: rgba(8, 8, 14, 0.9);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #fff;
+    padding: 11px 13px;
+    border-radius: var(--radius-sm);
+    width: 100%;
+    margin: 4px 0 12px;
+    font-size: 13.5px;
+    font-family: inherit;
+    transition: all var(--transition);
+  }
+  input[type="text"]:focus, select:focus, input[type="date"]:focus {
+    outline: none;
+    border-color: rgba(34, 211, 238, 0.5);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+  }
+  input[type="text"]::placeholder { color: var(--text-dim); }
 
-  /* BADGES & STAT TILES */
-  .rating-badge {
-    display: inline-block; background: linear-gradient(135deg, #1d4ed8, #38bdf8);
-    color: #fff; padding: 5px 12px; border-radius: 999px; font-weight: 700; font-size: 13px;
-    box-shadow: 0 2px 12px rgba(56,189,248,0.35); white-space: nowrap;
+  label {
+    display: block;
+    margin: 12px 0 5px;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
-  .agency-tag { font-size: 10.5px; padding: 3px 8px; border-radius: 6px; font-weight: 700; background: rgba(14, 116, 144, 0.25); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.35); }
-  .provenance-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; }
-  .prov-verified { background: rgba(22, 163, 74, 0.2); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.45); }
-  .prov-estimated { background: rgba(217, 119, 6, 0.22); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.45); }
-  .prov-unavailable { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); }
-  .status-pill { font-size: 11.5px; padding: 5px 10px; border-radius: 8px; background: rgba(15, 41, 30, 0.8); color: var(--accent-green); border: 1px solid rgba(34, 197, 94, 0.4); display: block; margin-bottom: 12px; }
-  
+  .value {
+    color: #fff;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ========== CARDS & TILES ========== */
+  .data-card, .stat-tile {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+  .data-card:hover {
+    border-color: rgba(255,255,255,0.1);
+  }
   .stat-tile {
-    background: rgba(11, 16, 29, 0.85); border: 1px solid rgba(56, 82, 130, 0.4);
-    border-radius: 10px; padding: 10px 12px;
+    padding: 14px;
   }
-  .stat-tile-label { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; }
-  .stat-tile-val { font-size: 14px; font-weight: 700; color: #fff; }
-  .stat-tile-sub { font-size: 11px; margin-top: 2px; }
+  .stat-tile-label {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+  }
+  .stat-tile-val {
+    font-size: 18px;
+    font-weight: 650;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .stat-tile-sub {
+    font-size: 12px;
+    margin-top: 3px;
+    color: var(--text-secondary);
+  }
 
-  .comp-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; margin-top: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-  .comp-table th, .comp-table td { padding: 10px 14px; border-bottom: 1px solid rgba(56, 82, 130, 0.25); text-align: left; }
-  .comp-table th { color: #fff; font-weight: 700; background: linear-gradient(180deg, rgba(37,99,235,0.35), rgba(11,16,29,0.9)); position: sticky; top: 0; font-size: 12px; letter-spacing: 0.3px; }
-  .comp-table tr:nth-child(even) td { background: rgba(15, 23, 42, 0.4); }
-  .comp-table tr:hover td { background: rgba(37, 99, 235, 0.18); }
-  .comp-table td:first-child { font-weight: 600; color: var(--text-muted); background: rgba(11,16,29,0.6); }
+  .rating-badge {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 12.5px;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+    letter-spacing: 0.01em;
+  }
+  .agency-tag {
+    font-size: 10.5px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-weight: 600;
+    background: rgba(34, 211, 238, 0.1);
+    color: #67e8f9;
+    border: 1px solid rgba(34, 211, 238, 0.2);
+    letter-spacing: 0.02em;
+  }
+  .provenance-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .prov-verified {
+    background: rgba(34, 197, 94, 0.12);
+    color: #86efac;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+  }
+  .prov-estimated {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fcd34d;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+  .prov-unavailable {
+    background: rgba(148, 163, 184, 0.08);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+  .status-pill {
+    font-size: 12.5px;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    background: rgba(34, 197, 94, 0.08);
+    color: var(--accent-green);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
 
-  .score-breakdown { display: flex; height: 6px; border-radius: 999px; overflow: hidden; background: #0b101d; margin-top: 6px; gap: 1px; }
+  /* Status colors used by JS */
+  .good { color: #4ade80 !important; }
+  .mod  { color: #fbbf24 !important; }
+  .bad  { color: #f87171 !important; }
+
+  /* ========== SITE LIST ITEMS ========== */
+  .site-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 13px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition);
+    gap: 10px;
+  }
+  .site-item:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.07);
+  }
+  .site-item.selected {
+    background: rgba(37, 99, 235, 0.12);
+    border-color: rgba(59, 130, 246, 0.35);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15);
+  }
+  .site-item .site-name {
+    font-weight: 550;
+    color: #f1f5f9;
+    font-size: 13.5px;
+  }
+  .site-item .site-meta {
+    font-size: 11px;
+    color: var(--accent-cyan);
+    opacity: 0.9;
+  }
+
+  /* ========== TABLES ========== */
+  .comp-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .comp-table th, .comp-table td {
+    padding: 13px 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    text-align: left;
+  }
+  .comp-table th {
+    color: #fff;
+    font-weight: 600;
+    background: rgba(0,0,0,0.35);
+    position: sticky;
+    top: 0;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    z-index: 2;
+  }
+  .comp-table tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+  .comp-table tr:hover td { background: rgba(59, 130, 246, 0.07); }
+  .comp-table td:first-child {
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+
+  /* Score breakdown bar */
+  .score-breakdown {
+    display: flex;
+    height: 5px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(15, 15, 23, 0.9);
+    margin-top: 7px;
+    gap: 1px;
+  }
   .sb-solar { background: #f59e0b; }
-  .sb-comms { background: #38bdf8; }
+  .sb-comms { background: #22d3ee; }
   .sb-ice   { background: #2dd4bf; }
-  .sb-slope { background: #4ade80; }
-  .analog-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 8px; margin-bottom: 10px; }
+  .sb-slope { background: #22c55e; }
 
-  .horizon { width: 100%; height: 120px; background: #0b0f1a; border: 1px solid var(--panel-border); border-radius: 10px; position: relative; margin: 10px 0; overflow: hidden; }
-  .horizon .line { position: absolute; left: 0; right: 0; top: 55%; height: 1px; background: #3a5075; }
-  .horizon .label { position: absolute; bottom: 6px; left: 10px; font-size: 10.5px; color: #64748b; }
-  .sun-marker, .earth-marker { position: absolute; width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%, -50%); }
-  .sun-marker { background: #ffcc00; box-shadow: 0 0 12px #ffaa00; }
-  .earth-marker { background: var(--accent-cyan); box-shadow: 0 0 10px #2a7aff; }
+  /* Horizon visualizer */
+  .horizon {
+    width: 100%;
+    height: 110px;
+    background: linear-gradient(180deg, rgba(8,8,16,0.9) 0%, rgba(15,15,25,0.95) 100%);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--radius-md);
+    position: relative;
+    margin: 14px 0 6px;
+    overflow: hidden;
+  }
+  .horizon .line {
+    position: absolute;
+    left: 0; right: 0;
+    top: 55%;
+    height: 1px;
+    background: rgba(255,255,255,0.12);
+  }
+  .horizon .label {
+    position: absolute;
+    bottom: 8px;
+    left: 12px;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .sun-marker, .earth-marker {
+    position: absolute;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 14px currentColor;
+  }
+  .sun-marker {
+    background: #fbbf24;
+    color: #fbbf24;
+  }
+  .earth-marker {
+    background: #22d3ee;
+    color: #22d3ee;
+  }
 
-  a { color: var(--accent-cyan); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  /* Solar progress bar */
+  .bar {
+    height: 6px;
+    background: rgba(15,15,23,0.9);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 10px 0 6px;
+  }
+  .bar > div {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    border-radius: 999px;
+    transition: width 0.4s var(--ease-out);
+  }
 
-  /* TOAST NOTIFICATION */
+  a {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    transition: color var(--transition);
+  }
+  a:hover { color: #67e8f9; text-decoration: underline; }
+  a:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 2px; }
+
+  /* ========== TOAST ========== */
   #toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
-    background: rgba(15, 23, 42, 0.96); border: 1px solid var(--accent-cyan); color: #fff;
-    padding: 9px 18px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.7); z-index: 300; opacity: 0; pointer-events: none;
-    transition: all 0.25s ease;
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(24px);
+    background: rgba(12, 12, 20, 0.95);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    color: #fff;
+    padding: 11px 22px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg), 0 0 30px rgba(34, 211, 238, 0.15);
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s var(--ease-out);
+    backdrop-filter: blur(16px);
   }
-  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 
-  /* PRESENTATION MODE */
+  /* ========== PRESENTATION MODE ========== */
   #presentation-overlay {
-    position: absolute; inset: 0; pointer-events: none; z-index: 100; display: none;
-    padding: 24px; justify-content: space-between; flex-direction: column;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+    padding: 28px;
+    justify-content: space-between;
+    flex-direction: column;
   }
-  body.presentation-mode #top-navbar, body.presentation-mode .panel, body.presentation-mode .dock-toggle { display: none !important; }
-  body.presentation-mode #presentation-overlay { display: flex; pointer-events: auto; }
-  .pres-card { background: rgba(13, 18, 32, 0.88); border: 1px solid var(--accent-cyan); border-radius: 14px; padding: 18px 24px; backdrop-filter: blur(14px); max-width: 460px; }
+  body.presentation-mode #top-navbar,
+  body.presentation-mode .panel,
+  body.presentation-mode .dock-toggle {
+    display: none !important;
+  }
+  body.presentation-mode #presentation-overlay {
+    display: flex;
+    pointer-events: auto;
+  }
+  .pres-card {
+    background: rgba(10, 10, 18, 0.88);
+    border: 1px solid rgba(34, 211, 238, 0.25);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    backdrop-filter: blur(20px);
+    max-width: 480px;
+    box-shadow: var(--shadow-lg), 0 0 40px rgba(34, 211, 238, 0.08);
+  }
 
-  #loading { position: absolute; inset: 0; background: var(--bg-base); display: flex; align-items: center; justify-content: center; z-index: 200; font-size: 18px; color: var(--accent-cyan); letter-spacing: 0.5px; }
+  /* ========== LOADING ========== */
+  #loading {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-base);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    gap: 18px;
+  }
+  #loading .loader-ring {
+    width: 48px;
+    height: 48px;
+    border: 2px solid rgba(34, 211, 238, 0.15);
+    border-top-color: var(--accent-cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading .loader-text {
+    font-size: 14px;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+  }
+
+  /* ========== GRID HELPERS ========== */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* Analog cards */
+  .analog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  /* ========== RESPONSIVE ========== */
+  @media (max-width: 900px) {
+    .left, .right { width: min(350px, calc(100vw - 28px)); }
+    .center-panel { width: calc(100vw - 24px); padding: 18px; }
+    #top-navbar { top: 10px; padding: 4px; }
+    .nav-tab { padding: 7px 11px; font-size: 12px; }
+  }
+  @media (max-width: 700px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .left, .right {
+      position: fixed;
+      top: auto;
+      bottom: 16px;
+      left: 14px;
+      right: 14px;
+      width: auto;
+      max-height: 52vh;
+    }
+    .center-panel { top: 72px; }
+    .dock-toggle { top: auto; bottom: 72px; }
+  }
 </style>
 </head>
 <body>
-<div id="loading">Loading 3D Moon Map &amp; Sun/Earth Positions…</div>
+<div id="loading">
+  <div class="loader-ring"></div>
+  <div class="loader-text">Loading 3D Moon Map &amp; Sun/Earth Positions…</div>
+</div>
 <div id="canvas-container"></div>
 <div id="toast">Saved!</div>
 
 <!-- SIDEBAR RE-OPEN TOGGLE PILLS -->
-<button id="toggleLeftBtn" class="dock-toggle" title="Open Locations & Controls">☰ Locations &amp; Controls</button>
-<button id="toggleRightBtn" class="dock-toggle" title="Open Selected Spot Info">Spot Details ☰</button>
+<button id="toggleLeftBtn" aria-label="Open locations and controls panel" class="dock-toggle" title="Open Locations & Controls">☰ Locations &amp; Controls</button>
+<button id="toggleRightBtn" aria-label="Open site telemetry panel" class="dock-toggle" title="Open Selected Spot Info">Spot Details ☰</button>
 
 <!-- PRESENTATION MODE UI -->
 <div id="presentation-overlay">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <div class="pres-card">
-      <h2 style="color:var(--accent-cyan); margin-bottom:4px; border:none; padding:0;">NASA Space Apps Challenge 2026</h2>
-      <div style="font-size:15px; font-weight:700;" id="presSiteName">Shackleton Rim 3D Map</div>
-      <div style="font-size:12.5px; color:var(--text-muted); margin-top:2px;">Location: <span id="presCoords">-89.90°, 0.00°</span> | Score: <span id="presScore" style="color:var(--accent-green);">94/100</span></div>
+      <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent-cyan); margin-bottom:6px;">NASA Space Apps Challenge 2026</div>
+      <div style="font-size:18px; font-weight:700; letter-spacing:-0.02em;" id="presSiteName">Shackleton Rim</div>
+      <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">
+        Location: <span id="presCoords">-89.90°, 0.00°</span> · Score: <span id="presScore" style="color:var(--accent-green); font-weight:600;">94/100</span>
+      </div>
     </div>
     <button class="btn" id="btnExitPres" style="background:#dc2626; border-color:#ef4444; color:#fff;">Exit Fullscreen</button>
   </div>
   <div class="pres-card" style="align-self:flex-end;">
-    <div style="font-size:11px; text-transform:uppercase; color:var(--accent-cyan); margin-bottom:2px;">Live Conditions</div>
-    <div style="font-size:13px;" id="presStatusText">Sunlight Availability: 88% | Earth Radio Signal: Direct Connection</div>
+    <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent-cyan); margin-bottom:4px;">Live Conditions</div>
+    <div style="font-size:13.5px;" id="presStatusText">Sunlight Availability: 88% · Earth Radio Signal: Direct Connection</div>
   </div>
 </div>
 
 <!-- TOP NAV TABS -->
-<div id="top-navbar">
+<div id="top-navbar" role="tablist" aria-label="Main navigation">
   <button class="nav-tab" data-tab="tab-about">About</button>
   <button class="nav-tab active" data-tab="tab-globe">3D Lunar Globe</button>
-  <button class="nav-tab" data-tab="tab-psr">Shadowed Craters &amp; Volatiles</button>
+  <button class="nav-tab" data-tab="tab-psr">Shadowed Craters</button>
   <button class="nav-tab" data-tab="tab-solar">Solar &amp; Comms</button>
   <button class="nav-tab" data-tab="tab-terrain">Terrain &amp; Safety</button>
   <button class="nav-tab" data-tab="tab-compare">Compare Sites</button>
   <button class="nav-tab" data-tab="tab-analog">Terrestrial Analogs</button>
-  <button class="nav-tab" data-tab="tab-ranking">Site Ranking &amp; Saved</button>
+  <button class="nav-tab" data-tab="tab-ranking">Site Ranking</button>
   <button class="nav-tab" data-tab="tab-mission">Mission &amp; Rover</button>
   <button class="nav-tab" data-tab="tab-reports">Reports &amp; Sources</button>
 </div>
 
-<!-- TAB 1: 3D DIGITAL TWIN & EXPLORER (CLEAN & COLLAPSIBLE) -->
-<div id="tab-globe-left" class="panel left active-panel collapsed">
+<!-- TAB 1: 3D DIGITAL TWIN & EXPLORER -->
+<div id="tab-globe-left" role="region" aria-label="Lunar Explorer" class="panel left active-panel collapsed">
   <div class="panel-header">
     <h2>Lunar Explorer</h2>
     <button class="collapse-btn" id="collapseLeftBtn" title="Hide panel for wider 3D view">Hide ✕</button>
   </div>
 
-  <!-- SECTION 1: LANDING SITES (OPEN BY DEFAULT) -->
   <details class="section-box" open>
     <summary>Candidate Landing Sites (14)</summary>
     <div class="site-list" id="siteList"></div>
   </details>
 
-  <!-- SECTION 2: MY SAVED LOCATIONS (OPEN BY DEFAULT) -->
   <details class="section-box" open>
     <summary>
       <span>Saved Locations (<span id="savedCountSidebar">0</span>)</span>
@@ -262,10 +828,9 @@
     <div class="site-list" id="sidebarSavedList" style="max-height:150px;"></div>
   </details>
 
-  <!-- SECTION 3: CAMERA & VIEW CONTROLS (COLLAPSIBLE TO REDUCE CLUTTER) -->
   <details class="section-box">
     <summary>Camera Views &amp; Surface Layers</summary>
-    <div class="grid-2" style="margin-bottom:10px;">
+    <div class="grid-2" style="margin-bottom:12px;">
       <button id="btnSouthPole">South Pole</button>
       <button id="btnEarthView">Earth View</button>
       <button id="btnMoonGlobal">Global Moon</button>
@@ -279,52 +844,49 @@
       <option value="Kaguya_TC_Ortho_Global_4096ppd">JAXA Kaguya Surface Albedo</option>
     </select>
 
-    <div class="grid-2" style="margin-top:4px;">
+    <div class="grid-2" style="margin-top:6px;">
       <button id="toggleMarkers" class="active">Site Markers</button>
       <button id="toggleRoute" class="active">Rover Traverse</button>
     </div>
   </details>
 
-  <!-- SECTION 4: DATE & ORBIT TIMELINE -->
   <details class="section-box">
     <summary>Mission Ephemeris Date (2026)</summary>
     <div class="status-pill" id="ephemStatus">Connecting to NASA JPL…</div>
     <input type="range" id="dateSlider" min="0" max="364" value="180" step="1">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-      <span>Date: <span class="value" id="dateLabel">—</span></span>
-      <button id="btnFetchHorizons" style="font-size:11.5px; padding:5px 10px;">Query JPL Ephemeris</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+      <span style="font-size:13px;">Date: <span class="value" id="dateLabel">—</span></span>
+      <button id="btnFetchHorizons" style="font-size:11.5px; padding:6px 11px;">Query JPL Ephemeris</button>
     </div>
-    <div style="font-size:10.5px; color:var(--text-muted); margin-top:6px;">
+    <div style="font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.5;">
       Tracks selenographic sub-solar &amp; sub-Earth libration geometry.
     </div>
   </details>
 
-  <p style="font-size:11.5px; color:var(--text-muted); text-align:center; margin-top:4px;">
+  <p style="font-size:12px; color:var(--text-dim); text-align:center; margin-top:8px; line-height:1.5;">
     Click anywhere on the 3D Moon to sample &amp; save coordinates.
   </p>
 </div>
 
 <!-- RIGHT PANEL: SELECTED SPOT DETAILS -->
-<div id="tab-globe-right" class="panel right active-panel collapsed">
+<div id="tab-globe-right" role="region" aria-label="Site Telemetry" class="panel right active-panel collapsed">
   <div class="panel-header">
     <h2>Site Telemetry</h2>
     <button class="collapse-btn" id="collapseRightBtn" title="Hide panel for wider 3D view">Hide ✕</button>
   </div>
 
-  <!-- HERO SITE CARD -->
-  <div class="data-card" style="background: rgba(24, 36, 62, 0.85);">
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+  <div class="data-card" style="background: linear-gradient(145deg, rgba(24, 36, 62, 0.7), rgba(18, 18, 28, 0.85)); border-color: rgba(59, 130, 246, 0.2);">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
       <div>
-        <div id="siteName" style="font-size:16px; font-weight:700; color:#fff;">—</div>
-        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Coords: <span class="value" id="siteCoords">—</span></div>
+        <div id="siteName" style="font-size:16.5px; font-weight:700; color:#fff; letter-spacing:-0.02em;">—</div>
+        <div style="font-size:12.5px; color:var(--text-muted); margin-top:3px;">Coords: <span class="value" id="siteCoords">—</span></div>
       </div>
       <span id="siteScore" class="rating-badge" title="Weighted suitability score">0/100</span>
     </div>
-    <div id="siteAgencyContainer" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:5px;"></div>
-    <div id="siteProvenanceRow" style="margin-top:8px;"></div>
+    <div id="siteAgencyContainer" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px;"></div>
+    <div id="siteProvenanceRow" style="margin-top:10px;"></div>
   </div>
 
-  <!-- 2x2 CLEAN METRIC TILES -->
   <div class="grid-2" style="margin-bottom:12px;">
     <div class="stat-tile" title="Calculated solar elevation angle above local smooth horizon">
       <div class="stat-tile-label"><span>Solar Elevation</span><span class="provenance-badge prov-estimated">Est.</span></div>
@@ -348,27 +910,23 @@
     </div>
   </div>
 
-  <!-- LOCATION NOTES -->
   <div class="data-card" id="siteNoteBox"></div>
 
-  <!-- SAVE & COMPARE ACTIONS -->
   <div class="data-card">
     <label style="margin-top:0;">Save Custom Coordinates</label>
     <div style="display:flex; gap:8px; margin-top:6px;">
       <input type="text" id="customSiteName" placeholder="Enter site label..." style="margin:0;">
-      <button id="btnSaveSite" style="white-space:nowrap; background:#0f766e; border-color:#14b8a6; color:#fff;">+ Save</button>
+      <button id="btnSaveSite" class="btn-primary" style="white-space:nowrap;">+ Save</button>
     </div>
-    <button class="btn" id="btnAddToCompare" style="width:100%; margin-top:8px;">+ Add Current Site to Comparison</button>
+    <button class="btn" id="btnAddToCompare" style="width:100%; margin-top:10px;">+ Add Current Site to Comparison</button>
   </div>
 
-  <!-- EXTERNAL MAPS & PRESENTATION -->
   <div class="grid-2" style="margin-top:8px;">
     <a id="quickmapBtn" class="btn" href="https://quickmap.lroc.im-ldi.com/" target="_blank" rel="noopener">LROC QuickMap ↗</a>
     <a id="moontrekBtn" class="btn" href="https://trek.nasa.gov/moon/" target="_blank" rel="noopener">Moon Trek ↗</a>
   </div>
-  <button class="btn" id="btnEnterPres" style="width:100%; margin-top:10px; background:#1e3a8a; border-color:#3b82f6; color:#fff;">Presentation Mode</button>
+  <button class="btn" id="btnEnterPres" style="width:100%; margin-top:12px; background:linear-gradient(135deg, #1e3a8a, #1d4ed8); border-color:transparent; color:#fff; box-shadow:0 2px 14px rgba(29,78,216,0.3);">Presentation Mode</button>
 
-  <!-- HIDDEN LABELS FOR COMPATIBILITY -->
   <span id="subSolarLabel" style="display:none;"></span>
   <span id="subEarthLabel" style="display:none;"></span>
 </div>
@@ -376,24 +934,24 @@
 <!-- TAB 2: PSR & RESOURCE INTELLIGENCE -->
 <div id="tab-psr" class="panel center-panel">
   <h2>Shadowed Craters &amp; Polar Volatiles</h2>
-  <p style="color:var(--text-muted); margin-bottom:16px;">
+  <p style="color:var(--text-muted); margin-bottom:18px; line-height:1.6;">
     Analysis of Permanently Shadowed Regions (PSRs) near the lunar south pole that act as cryogenic cold traps, preserving water ice and trapped volatiles over geological timescales.
   </p>
 
   <div class="grid-2">
     <div class="data-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h3 style="color:var(--accent-cyan); margin:0;">Cryogenic Cold-Trap Telemetry</h3>
         <span class="provenance-badge prov-verified">NASA LRO Diviner</span>
       </div>
-      <div id="psrCraterStats" style="line-height:1.8;">
+      <div id="psrCraterStats" style="line-height:1.85;">
         <div>Target Crater: <strong id="psrCraterName">Shackleton Crater &amp; Rim</strong></div>
         <div>Peak Bolometric Temp: <span class="value" id="psrMaxTemp">98 K (-175°C)</span></div>
         <div>Minimum Bolometric Temp: <span class="value" id="psrMinTemp">40 K (-233°C, Cryogenic)</span></div>
         <div>Inferred Water-Ice Concentration: <span class="value good" id="psrIceRatio">5.5% – 8.2% wt</span></div>
-        <div>Dataset Source: <span style="color:var(--text-muted); font-size:11.5px;">NASA LRO Diviner Lunar Radiometer Experiment (K)</span></div>
+        <div style="margin-top:6px; font-size:12px; color:var(--text-dim);">Dataset Source: NASA LRO Diviner Lunar Radiometer Experiment</div>
       </div>
-      <div style="margin-top:12px;">
+      <div style="margin-top:14px;">
         <label>Select Polar Crater</label>
         <select id="psrFeatureSelect" style="margin-bottom:0;">
           <option value="shackleton">Shackleton Crater &amp; Rim (-89.9°, 0.0°)</option>
@@ -406,7 +964,7 @@
 
     <div class="data-card">
       <h3 style="color:var(--accent-cyan); margin-top:0;">Scientific Evidence &amp; Verification</h3>
-      <ul style="padding-left:18px; font-size:12.5px; line-height:1.7; color:#cbd5e1;">
+      <ul style="padding-left:18px; font-size:13px; line-height:1.75; color:var(--text-secondary);">
         <li><strong>Orbital Instruments:</strong> NASA LRO Diviner thermal radiometer (K) and LOLA laser altimetry (m).</li>
         <li><strong>Remote Signatures:</strong> LEND neutron spectrometer hydrogen suppression and LAMP ultraviolet albedo anomalies.</li>
         <li><strong>Confidence Level:</strong> <span class="good">High (Validated by NASA LCROSS impact plume &amp; KASA ShadowCam)</span>.</li>
@@ -418,39 +976,39 @@
 
 <!-- TAB 3: SOLAR & HORIZON ANALYSIS -->
 <div id="tab-solar" class="panel center-panel">
-  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--panel-border); padding-bottom:8px; margin-bottom:12px;">
-    <h2 style="margin:0; border:none; padding:0;">Sunlight & Radio Links to Earth</h2>
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:10px; margin-bottom:14px;">
+    <h2 style="margin:0; border:none; padding:0;">Sunlight &amp; Radio Links to Earth</h2>
     <span class="provenance-badge prov-estimated">Simple Math Model</span>
   </div>
-  <p style="color:var(--text-muted); font-size:12px; margin-bottom:12px;">
+  <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px; line-height:1.55;">
     These numbers come from a basic round-Moon calculation. Real crater walls can block the Sun or Earth when they are very low in the sky.
   </p>
 
   <div class="grid-2">
     <div class="data-card">
       <h3 style="color:var(--accent-cyan); margin-top:0;">Sun Position</h3>
-      <div>Sun Height: <span class="value" id="sunAlt">—</span>° | Direction: <span class="value" id="sunAz">—</span>°</div>
-      <div style="margin-top:4px;">Sunlight: <span id="sunStatus">-</span></div>
+      <div>Sun Height: <span class="value" id="sunAlt">—</span>° · Direction: <span class="value" id="sunAz">—</span>°</div>
+      <div style="margin-top:6px;">Sunlight: <span id="sunStatus">-</span></div>
       <div class="bar"><div id="solarBar" style="width:0%"></div></div>
       <div>Power from Sun: <span class="value" id="solarPower">—</span></div>
 
       <div class="horizon" id="sunHorizon">
         <div class="line"></div>
-        <div class="label">FLAT HORIZON (0°)</div>
+        <div class="label">Flat Horizon (0°)</div>
         <div class="sun-marker" id="sunMarker" style="display:none"></div>
       </div>
     </div>
     
     <div class="data-card">
       <h3 style="color:var(--accent-cyan); margin-top:0;">Radio Link to Earth</h3>
-      <div>Earth Height: <span class="value" id="earthAlt">—</span>° | Direction: <span class="value" id="earthAz">—</span>°</div>
-      <div style="margin-top:4px;">Can We Talk to Earth?: <span id="earthStatus">-</span></div>
-      <div style="margin-top:6px; font-size:12px; color:#cbd5e1;" id="commsWindowSummary">Checking 28-day visibility…</div>
-      <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Simple estimate. Real missions may use orbiting satellites for extra coverage.</div>
+      <div>Earth Height: <span class="value" id="earthAlt">—</span>° · Direction: <span class="value" id="earthAz">—</span>°</div>
+      <div style="margin-top:6px;">Can We Talk to Earth?: <span id="earthStatus">-</span></div>
+      <div style="margin-top:8px; font-size:13px; color:var(--text-secondary);" id="commsWindowSummary">Checking 28-day visibility…</div>
+      <div style="font-size:11.5px; color:var(--text-dim); margin-top:6px;">Simple estimate. Real missions may use orbiting satellites for extra coverage.</div>
 
       <div class="horizon" id="earthHorizon">
         <div class="line"></div>
-        <div class="label">FLAT HORIZON (0°)</div>
+        <div class="label">Flat Horizon (0°)</div>
         <div class="earth-marker" id="earthMarker" style="display:none"></div>
       </div>
     </div>
@@ -459,35 +1017,35 @@
 
 <!-- TAB 4: TERRAIN & LANDING SAFETY ANALYSIS -->
 <div id="tab-terrain" class="panel center-panel">
-  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--panel-border); padding-bottom:8px; margin-bottom:12px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:10px; margin-bottom:14px;">
     <h2 style="margin:0; border:none; padding:0;">Terrain Slope &amp; Landing Hazard Assessment</h2>
     <span id="terrainTabProvBadge" class="provenance-badge prov-verified">NASA LRO LOLA DEM</span>
   </div>
-  <p style="color:var(--text-muted); margin-bottom:16px;">
+  <p style="color:var(--text-muted); margin-bottom:18px; line-height:1.55;">
     Evaluates terrain gradient (degrees), RMS surface roughness (meters), and boulder hazard distribution for safe lander touchdown.
   </p>
   
   <div class="grid-3">
     <div class="data-card">
       <h3 style="color:var(--accent-cyan); margin-top:0;">Terrain Slope (deg)</h3>
-      <div style="font-size:24px; font-weight:700; color:#fff; margin:8px 0;" id="terrainSlopeVal">3.8°</div>
-      <div style="font-size:12px;" id="terrainSlopeStatus" class="good">Safe for Touchdown (&lt; 10° tilt)</div>
+      <div style="font-size:26px; font-weight:700; color:#fff; margin:10px 0 6px; letter-spacing:-0.03em;" id="terrainSlopeVal">3.8°</div>
+      <div style="font-size:12.5px;" id="terrainSlopeStatus" class="good">Safe for Touchdown (&lt; 10° tilt)</div>
     </div>
     <div class="data-card">
       <h3 style="color:var(--accent-cyan); margin-top:0;">Surface Roughness (m)</h3>
-      <div style="font-size:24px; font-weight:700; color:#fff; margin:8px 0;" id="terrainRoughVal">0.72 m</div>
-      <div style="font-size:12px; color:var(--text-muted);">RMS elevation deviation over a 5m baseline</div>
+      <div style="font-size:26px; font-weight:700; color:#fff; margin:10px 0 6px; letter-spacing:-0.03em;" id="terrainRoughVal">0.72 m</div>
+      <div style="font-size:12.5px; color:var(--text-muted);">RMS elevation deviation over a 5m baseline</div>
     </div>
     <div class="data-card">
       <h3 style="color:var(--accent-cyan); margin-top:0;">Boulder &amp; Hazard Density</h3>
-      <div style="font-size:24px; font-weight:700; color:#fff; margin:8px 0;" id="terrainHazardVal">Low</div>
-      <div style="font-size:12px; color:var(--accent-green);" id="terrainHazardSub">Minimal surface boulder concentration</div>
+      <div style="font-size:26px; font-weight:700; color:#fff; margin:10px 0 6px; letter-spacing:-0.03em;" id="terrainHazardVal">Low</div>
+      <div style="font-size:12.5px; color:var(--accent-green);" id="terrainHazardSub">Minimal surface boulder concentration</div>
     </div>
   </div>
 
-  <div class="data-card" style="margin-top:4px;">
+  <div class="data-card" style="margin-top:6px;">
     <h3 style="color:var(--accent-cyan); margin-top:0;">Landing Site Assessment &amp; Data Provenance</h3>
-    <p style="font-size:13px; line-height:1.6; color:#cbd5e1;" id="terrainSummaryText">
+    <p style="font-size:13.5px; line-height:1.65; color:var(--text-secondary);" id="terrainSummaryText">
       This site exhibits stable highland anorthosite bedrock with a gradual, lander-safe slope.
     </p>
   </div>
@@ -495,16 +1053,16 @@
 
 <!-- TAB 5: MULTI-SITE COMPARISON SYSTEM -->
 <div id="tab-compare" class="panel center-panel">
-  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--panel-border); padding-bottom:8px; margin-bottom:12px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:10px; margin-bottom:14px;">
     <h2 style="margin:0; border:none; padding:0;">Multi-Site Scientific Comparison</h2>
     <button id="btnClearCompare" class="btn-danger">Reset Selection</button>
   </div>
-  <p style="color:var(--text-muted); margin-bottom:12px;">
+  <p style="color:var(--text-muted); margin-bottom:14px; line-height:1.55;">
     Select two or more landing sites below to compare illumination, LOLA slope, roughness, Diviner temperature, water-ice potential, Earth DTE communications, and overall mission score.
   </p>
 
-  <div class="data-card" style="padding:10px 14px;">
-    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+  <div class="data-card" style="padding:12px 16px;">
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <select id="compareAddSelect" style="margin:0; flex:1; min-width:200px;"></select>
       <button id="btnAddSiteFromDropdown" class="btn">+ Add Site to Table</button>
     </div>
@@ -527,7 +1085,7 @@
 <!-- TAB 6: EARTH ANALOG MATCH -->
 <div id="tab-analog" class="panel center-panel">
   <h2>Terrestrial Analog Testbeds</h2>
-  <p style="color:var(--text-muted); margin-bottom:16px;">
+  <p style="color:var(--text-muted); margin-bottom:18px; line-height:1.55;">
     Matches the regolith mineralogy, rock composition, and polar topography of <strong id="analogTargetName" style="color:var(--accent-cyan);">—</strong> (<span id="analogTargetCoords">—</span>) with terrestrial field sites used by <strong>NASA</strong>, <strong>ISRO</strong>, <strong>ESA</strong>, <strong>CSA</strong>, <strong>JAXA</strong>, and <strong>KASA</strong> for mission testing.
   </p>
   <div id="analogMatchesList" style="max-height:55vh; overflow-y:auto; padding-right:4px;"></div>
@@ -536,7 +1094,7 @@
 <!-- TAB 7: INTELLIGENT LANDING-SITE RANKING & SAVED SITES -->
 <div id="tab-ranking" class="panel center-panel">
   <h2>Landing Site Ranking &amp; Saved Locations</h2>
-  <p style="color:var(--text-muted); margin-bottom:14px;">
+  <p style="color:var(--text-muted); margin-bottom:16px; line-height:1.55;">
     Adjust mission priority weights to dynamically score candidate sites. Color bars show each factor's weighted contribution (Solar, Comms, Water-Ice, Terrain Safety) alongside data confidence.
   </p>
 
@@ -544,18 +1102,18 @@
     <div>
       <div class="data-card">
         <h3 style="color:var(--accent-cyan); margin-top:0;">Mission Priority Weights (out of 100)</h3>
-        <label style="color:#fbbf24;">Solar Illumination (<span id="wSolarVal" class="value">0</span>%)</label>
-        <input type="range" id="weightSolar" min="0" max="50" value="0">
+        <label style="color:#fbbf24;">Solar Illumination (<span id="wSolarVal" class="value">25</span>%)</label>
+        <input type="range" id="weightSolar" min="0" max="50" value="25">
         
-        <label style="color:#38bdf8;">Earth Line-of-Sight Comms (<span id="wCommsVal" class="value">0</span>%)</label>
-        <input type="range" id="weightComms" min="0" max="50" value="0">
+        <label style="color:#22d3ee;">Earth Line-of-Sight Comms (<span id="wCommsVal" class="value">25</span>%)</label>
+        <input type="range" id="weightComms" min="0" max="50" value="25">
         
-        <label style="color:#2dd4bf;">Water-Ice Proximity (<span id="wIceVal" class="value">0</span>%)</label>
-        <input type="range" id="weightIce" min="0" max="50" value="0">
+        <label style="color:#2dd4bf;">Water-Ice Proximity (<span id="wIceVal" class="value">25</span>%)</label>
+        <input type="range" id="weightIce" min="0" max="50" value="25">
         
-        <label style="color:#4ade80;">Terrain Safety &amp; Low Slope (<span id="wSlopeVal" class="value">0</span>%)</label>
-        <input type="range" id="weightSlope" min="0" max="50" value="0">
-        <div style="font-size:11.5px; color:var(--text-muted); margin-top:8px;">Total priority: <strong id="weightTotal" style="color:#fff;">0</strong>%</div>
+        <label style="color:#4ade80;">Terrain Safety &amp; Low Slope (<span id="wSlopeVal" class="value">25</span>%)</label>
+        <input type="range" id="weightSlope" min="0" max="50" value="25">
+        <div style="font-size:12px; color:var(--text-dim); margin-top:10px;">Total priority: <strong id="weightTotal" style="color:#fff;">100</strong>%</div>
       </div>
     </div>
     <div>
@@ -566,7 +1124,7 @@
       <div class="data-card">
         <h3 style="color:var(--accent-cyan); margin-top:0;">
           <span>Saved Custom Coordinates (<span id="savedCountTab">0</span>)</span>
-          <button id="btnClearAllTab" class="btn-danger" style="display:none;">Delete All</button>
+          <button id="btnClearAllTab" class="btn-danger" style="display:none; float:right; margin-top:-2px;">Delete All</button>
         </h3>
         <div id="savedSiteList" style="overflow-y:auto; max-height:130px;"></div>
       </div>
@@ -577,46 +1135,46 @@
 <!-- TAB 8: MISSION TIMELINE & ROVER ROUTE PLANNER -->
 <div id="tab-mission" class="panel center-panel">
   <h2>Mission Window &amp; Geodesic Rover Traverse Planner</h2>
-  <div class="grid-2" style="margin-top:12px;">
+  <div class="grid-2" style="margin-top:14px;">
     <div class="data-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <h3 style="color:var(--accent-cyan); margin:0;">Mission Window Comparison</h3>
         <span class="provenance-badge prov-estimated">Window Simulation</span>
       </div>
       <label>Mission Start Date (2026)</label>
-      <input type="date" id="missionStart" value="2026-10-15" min="2026-01-01" max="2026-12-31" style="background:#0b101d; border:1px solid var(--panel-border); color:#fff; padding:8px 10px; border-radius:8px; width:100%; margin:4px 0 8px;">
+      <input type="date" id="missionStart" value="2026-10-15" min="2026-01-01" max="2026-12-31">
       <label>Surface Operation Duration: <span class="value" id="durationVal">14 Days</span></label>
       <input type="range" id="missionDuration" min="1" max="60" value="14">
-      <div id="missionWindowStats" style="background:rgba(11,16,29,0.85); border:1px solid rgba(56,82,130,0.4); border-radius:8px; padding:10px; margin-top:8px; font-size:12px; line-height:1.7;">
+      <div id="missionWindowStats" style="background:rgba(8,8,16,0.7); border:1px solid rgba(56,82,130,0.35); border-radius:10px; padding:12px; margin-top:10px; font-size:13px; line-height:1.75;">
         <div>End Date: <strong class="value" id="missionEndLabel">2026-10-29</strong></div>
         <div>Avg Solar Illumination: <strong class="value" id="missionAvgSolar">—</strong></div>
         <div>Direct Earth Comms Window: <strong class="value" id="missionAvgComms">—</strong></div>
         <div>Estimated Comms Blackout Days: <strong class="value" id="missionBlackoutDays">—</strong></div>
       </div>
-      <button class="btn" id="btnCompareNextSynodic" style="width:100%; margin-top:8px; font-size:11.5px;">Shift +29.5 Days (Compare Next Lunar Cycle)</button>
+      <button class="btn" id="btnCompareNextSynodic" style="width:100%; margin-top:10px; font-size:12px;">Shift +29.5 Days (Compare Next Lunar Cycle)</button>
     </div>
 
     <div class="data-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <h3 style="color:var(--accent-cyan); margin:0;">Terrain-Aware Rover Traverse</h3>
         <span class="provenance-badge prov-estimated">Illustrative Path</span>
       </div>
       <label>Origin Base Site</label>
-      <select id="roverStartSelect" style="margin-bottom:6px;"></select>
+      <select id="roverStartSelect" style="margin-bottom:8px;"></select>
       <label>Destination Target / PSR</label>
-      <select id="roverEndSelect" style="margin-bottom:8px;"></select>
+      <select id="roverEndSelect" style="margin-bottom:10px;"></select>
       <label>Rover Power Architecture</label>
-      <select id="roverPowerMode" style="margin-bottom:8px;">
+      <select id="roverPowerMode" style="margin-bottom:10px;">
         <option value="solar">Solar Array (0.65 km/h avg, Daylight Only)</option>
         <option value="rtg">Radioisotope Power / RTG (0.85 km/h avg, Continuous)</option>
       </select>
-      <div id="roverRouteStats" style="background:rgba(11,16,29,0.85); border:1px solid rgba(56,82,130,0.4); border-radius:8px; padding:10px; font-size:12px; line-height:1.7;">
+      <div id="roverRouteStats" style="background:rgba(8,8,16,0.7); border:1px solid rgba(56,82,130,0.35); border-radius:10px; padding:12px; font-size:13px; line-height:1.75;">
         <div>Spherical Geodesic Distance: <strong class="value" id="roverDistVal">—</strong></div>
         <div>Terrain-Adjusted Path (+Slope Factor): <strong class="value" id="roverTerrainDistVal">—</strong></div>
         <div>Max Waypoint Slope Hazard: <strong class="value" id="roverMaxSlopeVal">—</strong></div>
         <div>Estimated Traverse Time: <strong class="value" id="roverTimeEst">—</strong></div>
       </div>
-      <button class="btn" id="btnSimulateRoute" style="width:100%; margin-top:10px;">Focus Traverse on 3D Globe</button>
+      <button class="btn" id="btnSimulateRoute" style="width:100%; margin-top:12px;">Focus Traverse on 3D Globe</button>
     </div>
   </div>
 </div>
@@ -624,11 +1182,11 @@
 <!-- TAB 9: REPORTS & DATA SOURCES -->
 <div id="tab-reports" class="panel center-panel">
   <h2>Export Mission Data &amp; Space Agency Sources</h2>
-  <p style="color:var(--text-muted); margin-bottom:14px;">
+  <p style="color:var(--text-muted); margin-bottom:16px; line-height:1.55;">
     Export complete JSON/CSV mission packages including coordinates, multi-site comparison results, weighted ranking breakdowns, data provenance, units, and confidence levels.
   </p>
 
-  <div class="grid-3" style="margin-bottom:16px;">
+  <div class="grid-3" style="margin-bottom:18px;">
     <button class="btn" id="btnExportJSON">Export Full Mission (JSON)</button>
     <button class="btn" id="btnExportCSV">Export Ranked &amp; Comparison (CSV)</button>
     <button class="btn" id="btnPrintReport">Print / Save Assessment PDF</button>
@@ -637,44 +1195,43 @@
   <div class="grid-2">
     <div class="data-card">
       <span class="agency-tag">NASA / JPL / Moon Trek</span>
-      <p style="margin-top:8px; color:#cbd5e1;">Uses <strong>JPL Horizons</strong> ephemeris geometry for Sun/Earth positions, <strong>NASA Moon Trek</strong> LOLA elevation (m) &amp; slope (deg) mosaics, and <strong>LROC QuickMap</strong> high-resolution NAC imagery.</p>
+      <p style="margin-top:10px; color:var(--text-secondary); line-height:1.6;">Uses <strong>JPL Horizons</strong> ephemeris geometry for Sun/Earth positions, <strong>NASA Moon Trek</strong> LOLA elevation (m) &amp; slope (deg) mosaics, and <strong>LROC QuickMap</strong> high-resolution NAC imagery.</p>
     </div>
     <div class="data-card">
       <span class="agency-tag">ISRO (Chandrayaan-1, 2 &amp; 3)</span>
-      <p style="margin-top:8px; color:#cbd5e1;">Includes <strong>Chandrayaan-3</strong> Shiv Shakti Point ChaSTE thermal measurements (K/°C), LIBS elemental detections (S, Fe, Ti, Ca, Al), and <strong>ISRO</strong> Sittampundi anorthosite regolith properties.</p>
+      <p style="margin-top:10px; color:var(--text-secondary); line-height:1.6;">Includes <strong>Chandrayaan-3</strong> Shiv Shakti Point ChaSTE thermal measurements (K/°C), LIBS elemental detections (S, Fe, Ti, Ca, Al), and <strong>ISRO</strong> Sittampundi anorthosite regolith properties.</p>
     </div>
     <div class="data-card">
       <span class="agency-tag">ESA &amp; ASI (PROSPECT / LUNA / LaRRI)</span>
-      <p style="margin-top:8px; color:#cbd5e1;">Incorporates <strong>ESA</strong> polar volatile drilling baselines, the Cologne <strong>LUNA</strong> analog facility, Lanzarote basaltic lava tube testbeds, and <strong>ASI</strong> laser retroreflector geometry.</p>
+      <p style="margin-top:10px; color:var(--text-secondary); line-height:1.6;">Incorporates <strong>ESA</strong> polar volatile drilling baselines, the Cologne <strong>LUNA</strong> analog facility, Lanzarote basaltic lava tube testbeds, and <strong>ASI</strong> laser retroreflector geometry.</p>
     </div>
     <div class="data-card">
       <span class="agency-tag">JAXA, CSA &amp; KASA</span>
-      <p style="margin-top:8px; color:#cbd5e1;">Incorporates <strong>JAXA</strong> Kaguya terrain data &amp; SLIM pinpoint landing metrics, <strong>KASA</strong> Danuri ShadowCam PSR observations, and <strong>CSA</strong> Canadian impact crater analogs.</p>
+      <p style="margin-top:10px; color:var(--text-secondary); line-height:1.6;">Incorporates <strong>JAXA</strong> Kaguya terrain data &amp; SLIM pinpoint landing metrics, <strong>KASA</strong> Danuri ShadowCam PSR observations, and <strong>CSA</strong> Canadian impact crater analogs.</p>
     </div>
   </div>
 </div>
 
-
 <!-- TAB 10: ABOUT -->
 <div id="tab-about" class="panel center-panel">
-  <div style="text-align:center; margin-bottom:20px;">
-    <div style="font-size:42px; margin-bottom:8px;">🌙</div>
-    <h2 style="margin:0; font-size:22px; background:linear-gradient(90deg,#38bdf8,#60a5fa); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Lunar South Pole Mission Planner</h2>
-    <p style="color:var(--text-muted); margin-top:6px; font-size:14px;">Explore • Compare • Plan • Learn</p>
+  <div style="text-align:center; margin-bottom:24px;">
+    <div style="font-size:40px; margin-bottom:10px; filter:drop-shadow(0 0 20px rgba(34,211,238,0.3));">🌙</div>
+    <h2 style="margin:0; font-size:24px; background:linear-gradient(90deg,#22d3ee,#60a5fa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-0.03em;">Lunar South Pole Mission Planner</h2>
+    <p style="color:var(--text-muted); margin-top:8px; font-size:14.5px;">Explore · Compare · Plan · Learn</p>
   </div>
 
-  <div class="data-card" style="background:linear-gradient(135deg, rgba(37,99,235,0.18), rgba(56,189,248,0.08)); border-color:rgba(56,189,248,0.4); margin-bottom:16px;">
+  <div class="data-card" style="background:linear-gradient(135deg, rgba(37,99,235,0.15), rgba(34,211,238,0.06)); border-color:rgba(34,211,238,0.25); margin-bottom:18px;">
     <h3 style="color:var(--accent-cyan); margin-top:0;">In a Nutshell</h3>
-    <p style="color:#e2e8f0; line-height:1.7; font-size:14.5px;">
+    <p style="color:#e2e8f0; line-height:1.7; font-size:15px;">
       An interactive 3D website that lets you explore the Moon’s south pole, compare real landing sites, and plan future missions — all using public NASA data.
     </p>
   </div>
 
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;">
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;">
     <div class="data-card" style="margin:0;">
-      <div style="font-size:28px; margin-bottom:6px;">🎯</div>
-      <h3 style="color:#fff; margin:0 0 8px 0; font-size:14px;">How It Helps</h3>
-      <ul style="padding-left:18px; color:#cbd5e1; line-height:1.65; font-size:13px; margin:0;">
+      <div style="font-size:26px; margin-bottom:8px;">🎯</div>
+      <h3 style="color:#fff; margin:0 0 10px 0; font-size:14.5px;">How It Helps</h3>
+      <ul style="padding-left:18px; color:var(--text-secondary); line-height:1.7; font-size:13.5px; margin:0;">
         <li>Makes lunar science visual and easy to understand</li>
         <li>Compare real Artemis candidate sites side-by-side</li>
         <li>See sunlight, radio links, terrain, and ice potential</li>
@@ -683,9 +1240,9 @@
       </ul>
     </div>
     <div class="data-card" style="margin:0;">
-      <div style="font-size:28px; margin-bottom:6px;">✨</div>
-      <h3 style="color:#fff; margin:0 0 8px 0; font-size:14px;">Why the South Pole?</h3>
-      <p style="color:#cbd5e1; line-height:1.65; font-size:13px; margin:0;">
+      <div style="font-size:26px; margin-bottom:8px;">✨</div>
+      <h3 style="color:#fff; margin:0 0 10px 0; font-size:14.5px;">Why the South Pole?</h3>
+      <p style="color:var(--text-secondary); line-height:1.7; font-size:13.5px; margin:0;">
         Some ridges get almost continuous sunlight for power, while nearby permanently shadowed craters stay cold enough to trap water ice — a rare and valuable combination for future exploration.
       </p>
     </div>
@@ -693,39 +1250,39 @@
 
   <div class="data-card">
     <h3 style="color:var(--accent-cyan); margin-top:0;">Main Features</h3>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; font-size:13px;">
-      <div style="background:rgba(11,16,29,0.6); border-radius:10px; padding:12px; border:1px solid rgba(56,82,130,0.3);">
-        <strong style="color:#fff;">3D Lunar Globe</strong><br><span style="color:#94a3b8;">Click the Moon to explore any location</span>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px; font-size:13px;">
+      <div style="background:rgba(8,8,16,0.6); border-radius:10px; padding:14px; border:1px solid rgba(56,82,130,0.25);">
+        <strong style="color:#fff;">3D Lunar Globe</strong><br><span style="color:var(--text-dim);">Click the Moon to explore any location</span>
       </div>
-      <div style="background:rgba(11,16,29,0.6); border-radius:10px; padding:12px; border:1px solid rgba(56,82,130,0.3);">
-        <strong style="color:#fff;">Shadowed Craters</strong><br><span style="color:#94a3b8;">Learn about ice-trapping PSRs</span>
+      <div style="background:rgba(8,8,16,0.6); border-radius:10px; padding:14px; border:1px solid rgba(56,82,130,0.25);">
+        <strong style="color:#fff;">Shadowed Craters</strong><br><span style="color:var(--text-dim);">Learn about ice-trapping PSRs</span>
       </div>
-      <div style="background:rgba(11,16,29,0.6); border-radius:10px; padding:12px; border:1px solid rgba(56,82,130,0.3);">
-        <strong style="color:#fff;">Solar & Comms</strong><br><span style="color:#94a3b8;">Sunlight and Earth radio links</span>
+      <div style="background:rgba(8,8,16,0.6); border-radius:10px; padding:14px; border:1px solid rgba(56,82,130,0.25);">
+        <strong style="color:#fff;">Solar &amp; Comms</strong><br><span style="color:var(--text-dim);">Sunlight and Earth radio links</span>
       </div>
-      <div style="background:rgba(11,16,29,0.6); border-radius:10px; padding:12px; border:1px solid rgba(56,82,130,0.3);">
-        <strong style="color:#fff;">Terrain & Safety</strong><br><span style="color:#94a3b8;">Slopes and landing hazards</span>
+      <div style="background:rgba(8,8,16,0.6); border-radius:10px; padding:14px; border:1px solid rgba(56,82,130,0.25);">
+        <strong style="color:#fff;">Terrain &amp; Safety</strong><br><span style="color:var(--text-dim);">Slopes and landing hazards</span>
       </div>
-      <div style="background:rgba(11,16,29,0.6); border-radius:10px; padding:12px; border:1px solid rgba(56,82,130,0.3);">
-        <strong style="color:#fff;">Compare Sites</strong><br><span style="color:#94a3b8;">Side-by-side scientific comparison</span>
+      <div style="background:rgba(8,8,16,0.6); border-radius:10px; padding:14px; border:1px solid rgba(56,82,130,0.25);">
+        <strong style="color:#fff;">Compare Sites</strong><br><span style="color:var(--text-dim);">Side-by-side scientific comparison</span>
       </div>
-      <div style="background:rgba(11,16,29,0.6); border-radius:10px; padding:12px; border:1px solid rgba(56,82,130,0.3);">
-        <strong style="color:#fff;">Site Ranking</strong><br><span style="color:#94a3b8;">Adjust priorities and rank locations</span>
+      <div style="background:rgba(8,8,16,0.6); border-radius:10px; padding:14px; border:1px solid rgba(56,82,130,0.25);">
+        <strong style="color:#fff;">Site Ranking</strong><br><span style="color:var(--text-dim);">Adjust priorities and rank locations</span>
       </div>
-      <div style="background:rgba(11,16,29,0.6); border-radius:10px; padding:12px; border:1px solid rgba(56,82,130,0.3);">
-        <strong style="color:#fff;">Mission & Rover</strong><br><span style="color:#94a3b8;">Plan dates and rover routes</span>
+      <div style="background:rgba(8,8,16,0.6); border-radius:10px; padding:14px; border:1px solid rgba(56,82,130,0.25);">
+        <strong style="color:#fff;">Mission &amp; Rover</strong><br><span style="color:var(--text-dim);">Plan dates and rover routes</span>
       </div>
-      <div style="background:rgba(11,16,29,0.6); border-radius:10px; padding:12px; border:1px solid rgba(56,82,130,0.3);">
-        <strong style="color:#fff;">Reports & Sources</strong><br><span style="color:#94a3b8;">Export data and view agency sources</span>
+      <div style="background:rgba(8,8,16,0.6); border-radius:10px; padding:14px; border:1px solid rgba(56,82,130,0.25);">
+        <strong style="color:#fff;">Reports &amp; Sources</strong><br><span style="color:var(--text-dim);">Export data and view agency sources</span>
       </div>
     </div>
   </div>
 
-  <p style="font-size:12px; color:var(--text-muted); margin-top:18px; text-align:center;">
+  <p style="font-size:12.5px; color:var(--text-dim); margin-top:22px; text-align:center; line-height:1.6;">
     Created for the NASA Space Apps Challenge 2026<br>
-    Educational tool using public NASA LRO, LOLA, Diviner & JPL Horizons data
+    Educational tool using public NASA LRO, LOLA, Diviner &amp; JPL Horizons data
   </p>
-</div></div>
+</div>
 
 <script type="importmap">
 {
@@ -981,10 +1538,10 @@ function showToast(msg) {
   t._timer = setTimeout(() => t.classList.remove('show'), 2400);
 }
 
-// ========== THREE.JS SCENE SETUP (PRESERVED EXACTLY) ==========
+// ========== THREE.JS SCENE SETUP ==========
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x070913);
+scene.background = new THREE.Color(0x05050a);
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 5000);
 camera.position.set(0, 25, 70);
@@ -1132,7 +1689,7 @@ const customMarker = new THREE.Mesh(markerGeo, new THREE.MeshBasicMaterial({ col
 customMarker.visible = false;
 markerGroup.add(customMarker);
 
-// Rover Route Line (Dynamic Geodesic Arc)
+// Rover Route Line
 let routeLine = null;
 function updateRoverRouteGeometry(startSite, endSite) {
   if (routeLine) {
@@ -1192,7 +1749,6 @@ function loadCachedEphemeris() {
     const raw = localStorage.getItem(EPHEM_CACHE_KEY);
     if (!raw) return null;
     const cached = JSON.parse(raw);
-    // Use cache if less than 6 hours old
     if (Date.now() - cached.timestamp < 6 * 60 * 60 * 1000) {
       return cached.data;
     }
@@ -1208,7 +1764,6 @@ function saveCachedEphemeris(data) {
     }));
   } catch (e) {}
 }
-
 
 async function fetchHorizonsAPI() {
   const statusEl = document.getElementById('ephemStatus');
@@ -1250,7 +1805,7 @@ async function fetchHorizonsAPI() {
     if (cached) {
       ephemerisState = { ...cached, source: "Cached JPL Horizons (Offline)" };
       statusEl.textContent = "Cached: Recent NASA JPL Data (Offline Mode)";
-      statusEl.style.color = "#38bdf8";
+      statusEl.style.color = "#22d3ee";
     } else {
       ephemerisState = computeAnalyticalEphemeris(dayOfYear);
       statusEl.textContent = "Offline: Analytical Libration Model";
@@ -1265,13 +1820,10 @@ function updateBodies() {
   const moonAngle = (dayOfYear / 27.32166) * Math.PI * 2;
   moon.position.set(Math.cos(moonAngle) * MOON_ORBIT, 0, Math.sin(moonAngle) * MOON_ORBIT);
   
-  // Accurate tidal lock + optical libration orientation
-  // Point the sub-Earth location toward Earth (origin)
   moon.lookAt(0, 0, 0);
-  moon.rotateY(Math.PI); // texture longitude offset
-  // Apply latitude and longitude libration
+  moon.rotateY(Math.PI);
   moon.rotateX(deg2rad(ephemerisState.subEarthLat));
-  moon.rotateY(deg2rad(ephemerisState.subEarthLon * 0.6)); // scaled lon libration for visual stability
+  moon.rotateY(deg2rad(ephemerisState.subEarthLon * 0.6));
 
   const subSolarLocal = latLonToVector3(ephemerisState.subSolarLat, ephemerisState.subSolarLon, 1);
   const subSolarWorld = subSolarLocal.applyQuaternion(moon.quaternion).normalize();
@@ -1326,7 +1878,6 @@ function computeSiteData(site, ephem = ephemerisState) {
   const sunH = selenographicElevationAzimuth(site.lat, site.lon, ephem.subSolarLat, ephem.subSolarLon);
   const earthH = selenographicElevationAzimuth(site.lat, site.lon, ephem.subEarthLat, ephem.subEarthLon);
 
-  // Solar disc angular radius is ~0.265 deg; polar ridges enjoy elevated horizon advantage
   let solarPct = 0;
   if (sunH.alt > -0.27) {
     const effectiveAlt = Math.max(0.25, sunH.alt + (Math.abs(site.lat) > 85 ? 1.4 : 0));
@@ -1344,7 +1895,6 @@ function computeSiteData(site, ephem = ephemerisState) {
   const earthStatus = earthVis ? 'Yes, we can talk to Earth' : 'No direct link (need relay)';
   const earthClass = earthVis ? 'good' : 'bad';
 
-  // Weighted scientific scoring using actual site slope, ice proxy, solar & comms
   const w = getWeightsNormalized();
   const solarSubScore = clamp(solarPct, 5, 100);
   const commsSubScore = earthH.alt > 2 ? 100 : (earthH.alt > -0.5 ? 72 : 18);
@@ -1391,7 +1941,6 @@ function computeAnalogMatches(site) {
   const slope = site.slope || 5;
   return TERRESTRIAL_ANALOGS.map(analog => {
     let score = 75;
-    // Higher match for polar/highland analogs when site is near pole
     if (analog.agency.includes('NASA') || analog.agency.includes('CSA')) {
       score += absLat > 80 ? 12 : 4;
     }
@@ -1402,9 +1951,7 @@ function computeAnalogMatches(site) {
     if (analog.type.toLowerCase().includes('highland') || analog.type.toLowerCase().includes('plagioclase')) {
       score += absLat > 70 ? 6 : 0;
     }
-    // Slope similarity bonus
     score += Math.max(0, 5 - Math.abs(slope - 5) * 0.8);
-    // Small lon variation for uniqueness
     score += Math.abs(Math.sin(site.lon * 0.07)) * 4;
     const matchPct = Math.round(Math.min(98, Math.max(62, score)));
     return { ...analog, matchPct };
@@ -1634,7 +2181,6 @@ function updateUI() {
   const data = computeSiteData(currentSite);
   const comms28 = compute28DayCommsEstimate(currentSite);
 
-  // Globe Right Panel
   document.getElementById('siteName').textContent = currentSite.name + (currentSite.isCustom ? ' (Custom)' : '');
   document.getElementById('siteCoords').textContent = `${currentSite.lat.toFixed(2)}°, ${currentSite.lon.toFixed(2)}°`;
   document.getElementById('siteScore').textContent = `${data.overallRating}/100`;
@@ -1683,8 +2229,8 @@ function updateUI() {
 
   document.getElementById('siteNoteBox').innerHTML = `
     <strong style="color:var(--accent-cyan);">Site Overview &amp; Provenance:</strong><br>
-    <span style="color:#e2e8f0; display:block; margin-top:4px;">${currentSite.note || 'Custom sampled surface coordinates on the 3D lunar globe.'}</span>
-    <span style="color:#7dd3fc; font-size:11.5px; display:block; margin-top:6px;">${currentSite.telemetry || 'Use LROC QuickMap or Moon Trek links below to inspect local DEM slope and NAC boulders.'}</span>
+    <span style="color:#e2e8f0; display:block; margin-top:5px; line-height:1.55;">${currentSite.note || 'Custom sampled surface coordinates on the 3D lunar globe.'}</span>
+    <span style="color:#67e8f9; font-size:12px; display:block; margin-top:8px; line-height:1.5;">${currentSite.telemetry || 'Use LROC QuickMap or Moon Trek links below to inspect local DEM slope and NAC boulders.'}</span>
   `;
 
   document.getElementById('quickmapBtn').href = `https://quickmap.lroc.im-ldi.com/?extent=${(currentSite.lon - 2).toFixed(2)},${(currentSite.lat - 2).toFixed(2)},${(currentSite.lon + 2).toFixed(2)},${(currentSite.lat + 2).toFixed(2)}`;
@@ -1737,11 +2283,11 @@ function updateUI() {
   document.getElementById('analogTargetCoords').textContent = `${currentSite.lat.toFixed(2)}°, ${currentSite.lon.toFixed(2)}°`;
   renderAnalogMatches(computeAnalogMatches(currentSite));
 
-  // Presentation Mode Elements
+  // Presentation Mode
   document.getElementById('presSiteName').textContent = currentSite.name;
   document.getElementById('presCoords').textContent = `${currentSite.lat.toFixed(2)}°, ${currentSite.lon.toFixed(2)}°`;
   document.getElementById('presScore').textContent = data.overallRating + "/100";
-  document.getElementById('presStatusText').textContent = `Sunlight Est.: ${data.solarPct.toFixed(0)}% | Earth Comms: ${data.earthStatus}`;
+  document.getElementById('presStatusText').textContent = `Sunlight Est.: ${data.solarPct.toFixed(0)}% · Earth Comms: ${data.earthStatus}`;
 
   markers.forEach((m, i) => {
     m.material.color.set(i === currentSite.index ? 0xff6622 : 0xffcc44);
@@ -1762,16 +2308,16 @@ function renderAnalogMatches(matches) {
     card.innerHTML = `
       <div class="analog-header">
         <div>
-          <strong style="color:#ffffff; font-size:13.5px;">${m.name}</strong> 
-          <span style="color:var(--text-muted); font-size:11.5px;">(${m.location})</span>
+          <strong style="color:#ffffff; font-size:14px;">${m.name}</strong> 
+          <span style="color:var(--text-muted); font-size:12px;">(${m.location})</span>
         </div>
         <div style="display:flex; gap:6px; align-items:center;">
           <span class="agency-tag">${m.agency}</span>
-          <span style="color:var(--accent-green); font-weight:700; font-size:12px;">${m.matchPct}% Match</span>
+          <span style="color:var(--accent-green); font-weight:700; font-size:12.5px;">${m.matchPct}% Match</span>
         </div>
       </div>
-      <div style="font-size:12px; color:#7dd3fc; margin-bottom:4px;">Soil &amp; Rock Type: <strong>${m.type}</strong></div>
-      <div style="font-size:12px; color:#cbd5e1;">${m.desc}</div>
+      <div style="font-size:12.5px; color:#67e8f9; margin-bottom:5px;">Soil &amp; Rock Type: <strong>${m.type}</strong></div>
+      <div style="font-size:13px; color:var(--text-secondary); line-height:1.55;">${m.desc}</div>
     `;
     container.appendChild(card);
   });
@@ -1833,34 +2379,31 @@ function viewSavedSite(s) {
 }
 
 function buildSiteLists() {
-  // 1. Official Candidate Landing Sites
   const list = document.getElementById('siteList');
   list.innerHTML = '';
   SITES.forEach((s, i) => {
     const div = document.createElement('div');
     div.className = 'site-item' + (currentSite.index === i && !currentSite.isCustom ? ' selected' : '');
     div.innerHTML = `
-      <span style="font-weight:500;">${s.name}</span>
-      <span style="font-size:11px; color:var(--accent-cyan);">${s.agencies[0]} · ${s.lat.toFixed(1)}°</span>
+      <span class="site-name">${s.name}</span>
+      <span class="site-meta">${s.agencies[0]} · ${s.lat.toFixed(1)}°</span>
     `;
     div.onclick = () => selectSite(i);
     list.appendChild(div);
   });
 
-  // Update Saved Counters & Clear Buttons
   const count = savedCustomSites.length;
   document.getElementById('savedCountSidebar').textContent = count;
   document.getElementById('savedCountTab').textContent = count;
   document.getElementById('btnClearAllSidebar').style.display = count > 0 ? 'inline-flex' : 'none';
   document.getElementById('btnClearAllTab').style.display = count > 0 ? 'inline-flex' : 'none';
 
-  // 2. Render Saved Locations in BOTH Sidebar and Ranking Tab
   const targets = [document.getElementById('sidebarSavedList'), document.getElementById('savedSiteList')];
   targets.forEach(container => {
     if (!container) return;
     container.innerHTML = '';
     if (count === 0) {
-      container.innerHTML = '<div style="color:var(--text-muted); font-size:11.5px; padding:6px 2px;">No saved spots yet. Click anywhere on the 3D Moon and press <strong>+ Save</strong>.</div>';
+      container.innerHTML = '<div style="color:var(--text-dim); font-size:12px; padding:8px 4px; line-height:1.5;">No saved spots yet. Click anywhere on the 3D Moon and press <strong style="color:#fff;">+ Save</strong>.</div>';
       return;
     }
 
@@ -1875,7 +2418,7 @@ function buildSiteLists() {
       info.style.minWidth = '0';
       info.innerHTML = `
         <div style="font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📌 ${s.name}</div>
-        <div style="font-size:10.5px; color:var(--text-muted);">${s.lat.toFixed(1)}°, ${s.lon.toFixed(1)}° · Score ${s.score}/100</div>
+        <div style="font-size:11px; color:var(--text-muted);">${s.lat.toFixed(1)}°, ${s.lon.toFixed(1)}° · Score ${s.score}/100</div>
       `;
       info.onclick = () => viewSavedSite(s);
 
@@ -1953,7 +2496,7 @@ function updateRankings() {
         <div class="sb-ice" style="width:${(b.ice/sumB)*100}%;"></div>
         <div class="sb-slope" style="width:${(b.slope/sumB)*100}%;"></div>
       </div>
-      <div style="font-size:10px; color:var(--text-muted); margin-top:3px; display:flex; justify-content:space-between;">
+      <div style="font-size:10px; color:var(--text-muted); margin-top:4px; display:flex; justify-content:space-between;">
         <span>☀ ${b.solar}pt</span><span>📡 ${b.comms}pt</span><span>❄ ${b.ice}pt</span><span>⛰ ${b.slope}pt</span>
       </div>
     `;
@@ -2016,10 +2559,8 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
     };
     customMarker.position.copy(local.normalize().multiplyScalar(MOON_RADIUS * 1.01));
     customMarker.visible = true;
-    // Always pop out Site Telemetry panel on custom click
     rightPanel.classList.remove('collapsed');
     toggleRightBtn.classList.remove('visible');
-    // Ensure we are on the globe view
     document.querySelector('[data-tab="tab-globe"]').click();
     buildSiteLists();
     updateUI();
@@ -2077,7 +2618,6 @@ function animateCameraTo(target, distance) {
 document.getElementById('btnSouthPole').onclick = () => {
   const pole = latLonToVector3(-90, 0, MOON_RADIUS).applyQuaternion(moon.quaternion).add(moon.position);
   controls.target.copy(pole);
-  // Position camera more directly overhead to reduce polar perspective stretch
   const offset = new THREE.Vector3(0.15, -3.2, 0.15);
   camera.position.copy(pole).add(offset);
 };
@@ -2085,7 +2625,6 @@ document.getElementById('btnEarthView').onclick = () => { controls.target.set(0,
 document.getElementById('btnMoonGlobal').onclick = () => { controls.target.copy(moon.position); camera.position.copy(moon.position).add(new THREE.Vector3(6, 3, 9)); };
 document.getElementById('btnResetView').onclick = () => { controls.target.set(0,0,0); camera.position.set(0, 25, 70); };
 
-// Overlay Toggles
 document.getElementById('toggleMarkers').onclick = (e) => {
   markerGroup.visible = !markerGroup.visible;
   e.target.classList.toggle('active');
@@ -2103,7 +2642,6 @@ document.getElementById('btnSimulateRoute').onclick = () => {
   animateCameraTo(pole, MOON_RADIUS * 2.5);
 };
 
-// PSR Feature Selector
 document.getElementById('psrFeatureSelect').onchange = (e) => {
   const feat = PSR_FEATURES[e.target.value];
   if (feat) {
@@ -2114,7 +2652,6 @@ document.getElementById('psrFeatureSelect').onchange = (e) => {
   }
 };
 
-// Rover & Mission Window Event Listeners
 document.getElementById('roverPowerMode').onchange = updateRoverPlanner;
 document.getElementById('roverStartSelect').onchange = updateRoverPlanner;
 document.getElementById('roverEndSelect').onchange = updateRoverPlanner;
@@ -2128,15 +2665,12 @@ document.getElementById('btnCompareNextSynodic').onclick = () => {
   showToast(`Shifted window +1 synodic lunar cycle (${getSelectedDateString(nextDoy)})`);
 };
 
-// Presentation Mode
 document.getElementById('btnEnterPres').onclick = () => document.body.classList.add('presentation-mode');
 document.getElementById('btnExitPres').onclick = () => document.body.classList.remove('presentation-mode');
 
-// General Event Listeners
 document.getElementById('dateSlider').oninput = (e) => {
   dayOfYear = +e.target.value;
   updateDateLabel();
-  // Prefer analytical for interactive scrubbing; user can re-query Horizons for exact day
   ephemerisState = computeAnalyticalEphemeris(dayOfYear);
   document.getElementById('ephemStatus').textContent = "Analytical Model (scrub date, then Query for live)";
   document.getElementById('ephemStatus').style.color = "#fcd34d";
@@ -2149,7 +2683,6 @@ document.getElementById('trekLayerSelect').onchange = (e) => loadMoonTrekLayer(e
   document.getElementById(id).oninput = updateUI;
 });
 
-// Enriched Exports
 document.getElementById('btnExportJSON').onclick = () => {
   const allSites = [...SITES, ...savedCustomSites];
   const rankedExport = allSites.map(s => {
@@ -2243,14 +2776,12 @@ populateCompareDropdown();
 populateRoverDropdowns();
 updateRoverPlanner();
 selectSite(0);
-fetchHorizonsAPI(); // Try live update (falls back gracefully)
+fetchHorizonsAPI();
 
-// Auto-refresh live ephemeris every 15 minutes when online
 setInterval(() => {
   if (navigator.onLine) fetchHorizonsAPI();
 }, 15 * 60 * 1000);
 
-// Start with explorer and telemetry panels hidden until toggled
 document.getElementById('toggleLeftBtn').classList.add('visible');
 document.getElementById('toggleRightBtn').classList.add('visible');
 
